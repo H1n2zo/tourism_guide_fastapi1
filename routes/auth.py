@@ -1,9 +1,3 @@
-# auth.py
-"""
-Authentication and Authorization Module
-Handles login, registration, sessions, and security
-"""
-
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates

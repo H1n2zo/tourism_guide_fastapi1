@@ -9,12 +9,14 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css">
     <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
     <style>
         .hero-image {
             height: 500px;
             background-size: cover;
             background-position: center;
             position: relative;
+            margin-top: -20px;
         }
         .hero-overlay {
             position: absolute;
@@ -118,17 +120,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     {% endif %}
-
-    <!-- Breadcrumb -->
-    <div class="container mt-3" style="padding-top: 76px;">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/"><i class="fas fa-home"></i> Home</a></li>
-                <li class="breadcrumb-item"><a href="/#destinations">Destinations</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ destination.name }}</li>
-            </ol>
-        </nav>
-    </div>
 
     <!-- Hero Section -->
     <div class="hero-image" style="background-image: url('{% if destination.image_path %}{{ UPLOAD_URL }}{{ destination.image_path }}{% else %}https://via.placeholder.com/800x400?text={{ destination.name }}{% endif %}');">
