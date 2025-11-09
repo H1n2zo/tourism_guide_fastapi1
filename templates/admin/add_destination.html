@@ -1,1 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Destinations - Tourism Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="p-4">
+            <h4><i class="fas fa-map-marked-alt"></i> Tourism Admin</h4>
+            <hr class="bg-white">
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="/admin/dashboard">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a class="nav-link active" href="/admin/destinations">
+                <i class="fas fa-map-pin"></i> Destinations
+            </a>
+            <a class="nav-link" href="/admin/categories">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a class="nav-link" href="/admin/users">
+                <i class="fas fa-users"></i> Users
+            </a>
+            <hr class="bg-white">
+            <a class="nav-link" href="/">
+                <i class="fas fa-globe"></i> View Site
+            </a>
+            <a class="nav-link" href="/logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </nav>
+    </div>
 
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-map-pin"></i> Manage Destinations</h2>
+            <a href="/admin/destinations/add" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Destination
+            </a>
+        </div>
+
+        {% if success %}
+        <div class="alert alert-success alert-dismissible fade show">
+            {% if success == 'created' %}
+                Destination created successfully!
+            {% elif success == 'updated' %}
+                Destination updated successfully!
+            {% elif success == 'deleted' %}
+                Destination deleted successfully!
+            {% elif success == 'toggled' %}
+                Status updated successfully!
+            {% else %}
+                {{ success }}
+            {% endif %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <!-- Search and Filter -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Search destinations..." value="{{ search }}">
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" name="category">
+                            <option value="0">All Categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if category_filter == cat.id %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Destinations Table -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if destinations %}
+                                {% for dest, category_name in destinations %}
+                                <tr>
+                                    <td>
+                                        {% if dest.image_path %}
+                                        <img src="{{ UPLOAD_URL }}{{ dest.image_path }}" 
+                                             class="destination-img" alt="{{ dest.name }}">
+                                        {% else %}
+                                        <img src="https://via.placeholder.com/80x60?text=No+Image" 
+                                             class="destination-img" alt="No image">
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ dest.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ category_name or 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        {% if dest.latitude and dest.longitude %}
+                                        <small>{{ "%.4f"|format(dest.latitude) }}, {{ "%.4f"|format(dest.longitude) }}</small>
+                                        {% else %}
+                                        <span class="text-muted">No coordinates</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if dest.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ dest.created_at.strftime('%b %d, %Y') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="/admin/destinations/add?id={{ dest.id }}" 
+                                               class="btn btn-sm btn-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="/destination/{{ dest.id }}" 
+                                               class="btn btn-sm btn-info" title="View" target="_blank">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="/admin/destinations/toggle/{{ dest.id }}" 
+                                               class="btn btn-sm btn-warning" title="Toggle Status" 
+                                               onclick="return confirm('Toggle status?')">
+                                                <i class="fas fa-toggle-on"></i>
+                                            </a>
+                                            <a href="/admin/destinations/delete/{{ dest.id }}" 
+                                               class="btn btn-sm btn-danger" title="Delete" 
+                                               onclick="return confirm('Delete this destination?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                                        <p class="text-muted">No destinations found</p>
+                                        <a href="/admin/destinations/add" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Add Your First Destination
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

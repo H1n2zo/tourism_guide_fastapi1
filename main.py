@@ -14,9 +14,9 @@ from config.database import (
 )
 
 # Import routers
-from auth import router as auth_router, get_current_user
-from destination import router as destination_router
-from admin import router as admin_router
+from routes.auth import router as auth_router, get_current_user
+from routes.destination import router as destination_router
+from routes.admin import router as admin_router
 
 
 # Lifespan event handler
