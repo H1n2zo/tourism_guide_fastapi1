@@ -49,8 +49,10 @@
     transition: transform 0.3s, box-shadow 0.3s;
     height: 100%;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background-color: #fff;
 }
 
 .destination-card:hover {

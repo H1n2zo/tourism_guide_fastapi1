@@ -133,13 +133,13 @@
                             {% if dest.image_path %}
                             <img src="{{ UPLOAD_URL }}{{ dest.image_path }}" class="card-img-top" alt="{{ dest.name }}">
                             {% else %}
-                            <img src="https://via.placeholder.com/400x300?text={{ dest.name }}" class="card-img-top" alt="{{ dest.name }}">
+                            <img src="https://via.placeholder.com/400x400?text={{ dest.name }}" class="card-img-top" alt="{{ dest.name }}">
                             {% endif %}
                             <span class="category-badge">
                                 <i class="fas {{ dest.icon }}"></i> {{ dest.category_name }}
                             </span>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body px-1">
                             <h5 class="card-title">{{ dest.name }}</h5>
                             <p class="card-text">{{ dest.description[:100] }}...</p>
                             <div class="mb-2">
