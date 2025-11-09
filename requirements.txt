@@ -1,0 +1,37 @@
+# requirements.txt
+# FastAPI Tourism Guide System Dependencies
+# Updated for Python 3.13 compatibility
+
+# Core FastAPI (Updated versions)
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# Database
+SQLAlchemy==2.0.36
+pymysql==1.1.1
+
+# Templates
+jinja2==3.1.4
+
+# File handling
+python-multipart==0.0.17
+aiofiles==24.1.0
+
+# Security
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Data validation (Updated for Python 3.13)
+pydantic==2.10.3
+pydantic-core==2.27.2
+email-validator==2.2.0
+
+# HTTP client
+httpx==0.28.1
+
+# Development (Optional - can skip if issues)
+# pytest==8.3.4
+# black==24.10.0

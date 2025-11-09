@@ -1,0 +1,30 @@
+# requirements-simple.txt
+# Simplified dependencies that work without Rust compiler
+
+# Core FastAPI
+fastapi
+uvicorn[standard]
+
+# Database
+sqlalchemy
+pymysql
+
+# Templates
+jinja2
+
+# File handling
+python-multipart
+aiofiles
+
+# Security
+passlib[bcrypt]
+python-jose[cryptography]
+
+# Environment variables
+python-dotenv
+
+# Data validation
+pydantic
+email-validator
+
+# No version locks = uses latest compatible versions

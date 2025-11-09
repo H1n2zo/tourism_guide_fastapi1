@@ -1,0 +1,46 @@
+/* Admin Panel Styles */
+.sidebar {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #2e50e8ff 0%, #8017e8ff 100%);
+    color: white;
+    position: fixed;
+    width: 250px;
+}
+
+.sidebar .nav-link {
+    color: rgba(255,255,255,0.8);
+    padding: 15px 20px;
+    transition: all 0.3s;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+.main-content {
+    margin-left: 250px;
+    padding: 20px;
+}
+
+.stat-card {
+    border-left: 4px solid;
+    transition: transform 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card.primary { border-color: #667eea; }
+.stat-card.success { border-color: #28a745; }
+.stat-card.warning { border-color: #ffc107; }
+.stat-card.info { border-color: #17a2b8; }
+
+.destination-img {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 5px;
+}

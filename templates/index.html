@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourism Guide System - Explore Ormoc City</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+    
+    <!-- CDN Links -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    
+    <!-- Custom CSS Files -->
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/home.css">
+    <link rel="stylesheet" href="/static/css/routes.css">
+    <link rel="stylesheet" href="/static/css/map.css">
+</head>
+<body>
+    <button id="backToTop" title="Back to top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-map-marked-alt"></i> Tourism Guide
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#home"><i class="fas fa-home"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#destinations"><i class="fas fa-map-pin"></i> Destinations</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#routes"><i class="fas fa-route"></i> Transportation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#mapI"><i class="fas fa-map"></i> Interactive Map</a>
+                    </li>
+                    {% if current_user %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="fas fa-user"></i> {{ current_user.username }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% if current_user.role == 'admin' %}
+                                <li><a class="dropdown-item" href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Admin Panel</a></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="home" style="margin-top: -76px; padding-top: 156px;">
+        <div class="container text-center">
+            <h1 class="display-3 fw-bold mb-3">Discover Amazing Places</h1>
+            <p class="lead mb-4">Explore tourist destinations, find routes, and plan your journey</p>
+            <a href="#destinations" class="btn btn-light btn-lg"><i class="fas fa-compass"></i> Start Exploring</a>
+            
+            <div class="stats-row">
+                <div class="stat-item">
+                    <h3>{{ total_destinations }}</h3>
+                    <p>Destinations</p>
+                </div>
+                <div class="stat-item">
+                    <h3>{{ total_reviews }}</h3>
+                    <p>Reviews</p>
+                </div>
+                <div class="stat-item">
+                    <h3>{{ total_categories }}</h3>
+                    <p>Categories</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search and Filter Section -->
+    <div class="container">
+        <div class="search-box">
+            <form method="GET" class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Search destinations..." value="{{ search }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" name="category">
+                        <option value="0">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if category_filter == cat.id %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Destinations Grid -->
+    <div class="container mt-5" id="destinations">
+        <h2 class="mb-4"><i class="fas fa-map-pin"></i> Featured Destinations</h2>
+        <div class="row g-4">
+            {% if destinations %}
+                {% for dest in destinations %}
+                <div class="col-md-4">
+                    <div class="card destination-card">
+                        <div class="position-relative">
+                            {% if dest.image_path %}
+                            <img src="{{ UPLOAD_URL }}{{ dest.image_path }}" class="card-img-top" alt="{{ dest.name }}">
+                            {% else %}
+                            <img src="https://via.placeholder.com/400x300?text={{ dest.name }}" class="card-img-top" alt="{{ dest.name }}">
+                            {% endif %}
+                            <span class="category-badge">
+                                <i class="fas {{ dest.icon }}"></i> {{ dest.category_name }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ dest.name }}</h5>
+                            <p class="card-text">{{ dest.description[:100] }}...</p>
+                            <div class="mb-2">
+                                {% if dest.review_count > 0 and dest.avg_rating > 0 %}
+                                    <div class="rating">
+                                        {% for i in range(5) %}
+                                            {% if i < dest.avg_rating|round|int %}
+                                            <i class="fas fa-star"></i>
+                                            {% else %}
+                                            <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <small class="rating-text">
+                                        {{ dest.avg_rating }} / 5 
+                                        ({{ dest.review_count }} review{% if dest.review_count != 1 %}s{% endif %})
+                                    </small>
+                                {% else %}
+                                    <div class="not-rated">
+                                        <i class="far fa-star"></i> Not rated yet
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <a href="/destination/{{ dest.id }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-info-circle"></i> View Details
+                            </a>
+                            <button class="btn btn-outline-primary btn-sm" onclick="showOnMap({{ dest.latitude }}, {{ dest.longitude }}, '{{ dest.name }}')">
+                                <i class="fas fa-map-marker-alt"></i> Show on Map
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>No destinations found</h3>
+                        <p class="text-muted">Try adjusting your search or filter criteria</p>
+                        <a href="/" class="btn btn-primary">Clear Filters</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Transportation Routes Section -->
+    <div class="container mt-5" id="routes">
+        <h2 class="mb-4"><i class="fas fa-route"></i> Transportation Routes & Fares</h2>
+        
+        <div class="route-search-box">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label"><i class="fas fa-map-marker-alt"></i> Select Destination</label>
+                    <select class="form-select" id="destinationFilter" onchange="filterRoutes()">
+                        <option value="">All Destinations</option>
+                        {% for dest in all_destinations %}
+                        <option value="{{ dest.id }}">{{ dest.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label"><i class="fas fa-bus"></i> Transport Mode</label>
+                    <select class="form-select" id="transportFilter" onchange="filterRoutes()">
+                        <option value="">All Transport</option>
+                        <option value="jeepney">Jeepney</option>
+                        <option value="taxi">Taxi</option>
+                        <option value="bus">Bus</option>
+                        <option value="van">Van</option>
+                        <option value="tricycle">Tricycle</option>
+                        <option value="walking">Walking</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-secondary w-100" onclick="clearFilters()">
+                        <i class="fas fa-redo"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="routesList">
+            <div class="no-routes">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <p>Loading available routes...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="container mt-4" id="mapI">
+        <h2 class="mb-4"><i class="fas fa-map"></i> Interactive Map</h2>
+        <div id="map"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-4 mt-5">
+        <p>&copy; 2025 Tourism Guide System. All rights reserved.</p>
+        <p><small>Powered by FastAPI & OpenStreetMap (100% Free & Open Source)</small></p>
+    </footer>
+
+    <!-- Bootstrap & Leaflet CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    
+    <!-- Pass backend data to JavaScript -->
+    <script>
+        const destinations = {{ destinations|tojson }};
+        window.destinations = destinations;
+        window.UPLOAD_URL = "{{ UPLOAD_URL }}";
+    </script>
+    
+    <!-- Custom JavaScript Files -->
+    <script src="/static/js/map.js"></script>
+    <script src="/static/js/routes.js"></script>
+    <script src="/static/js/main.js"></script>
+
+</body>
+</html>

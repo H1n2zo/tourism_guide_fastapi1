@@ -1,0 +1,69 @@
+/* Routes & Transportation Styles */
+.route-search-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.route-card {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.route-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.route-card.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+
+.transport-icon {
+    font-size: 2rem;
+    margin-right: 15px;
+}
+
+.transport-icon.jeepney { color: #ff6b6b; }
+.transport-icon.taxi { color: #feca57; }
+.transport-icon.bus { color: #48dbfb; }
+.transport-icon.van { color: #1dd1a1; }
+.transport-icon.tricycle { color: #ee5a6f; }
+.transport-icon.walking { color: #54a0ff; }
+
+.route-info-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    margin-right: 8px;
+    margin-bottom: 5px;
+}
+
+.badge-distance { background: #e3f2fd; color: #1976d2; }
+.badge-time { background: #fff3e0; color: #f57c00; }
+.badge-fare { background: #e8f5e9; color: #388e3c; }
+
+.no-routes {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.leaflet-routing-container {
+    display: none;
+}
+
+.custom-route-marker {
+    background: transparent !important;
+    border: none !important;
+}
