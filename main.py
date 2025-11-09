@@ -1,5 +1,3 @@
-# Add this after creating the FastAPI app
-from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request, Depends, Query
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -9,9 +7,6 @@ from sqlalchemy import func
 from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 from config.database import (
     get_db, Destination, Category, Review, Route, UPLOAD_URL, 
@@ -46,6 +41,7 @@ app = FastAPI(
 
 # Mount static files
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Setup Jinja2 templates
 templates = Jinja2Templates(directory="templates")
