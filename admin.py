@@ -1,14 +1,13 @@
-# admin.py
+# admin.py - Enhanced version with better structure
 """
-Admin Panel - Dashboard, Destinations, Categories, Routes, Users Management
-Converted from admin/*.php
+Admin Panel - Complete implementation with all features
 """
 
-from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException
+from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func
 from typing import Optional, List
 from pathlib import Path
 import shutil
@@ -24,27 +23,28 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 templates = Jinja2Templates(directory="templates")
 
 
-# Helper function to save uploaded file
 async def save_upload_file(upload_file: UploadFile, subfolder: str = "destinations") -> str:
     """Save uploaded file and return the path"""
-    
-    # Create unique filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename_str = upload_file.filename if upload_file.filename else "unknown"
     extension = Path(filename_str).suffix
     filename = f"{timestamp}_{filename_str}"
     
-    # Full path
     upload_dir = UPLOAD_PATH / subfolder
     upload_dir.mkdir(parents=True, exist_ok=True)
     file_path = upload_dir / filename
     
-    # Save file
     with file_path.open("wb") as buffer:
         shutil.copyfileobj(upload_file.file, buffer)
     
-    # Return relative path
     return f"{subfolder}/{filename}"
+
+
+def get_unread_feedback_count(db: Session) -> int:
+    """Helper to get unread feedback count"""
+    return db.query(func.count(WebsiteFeedback.id)).filter(
+        WebsiteFeedback.is_read.is_(False)
+    ).scalar() or 0
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -53,16 +53,15 @@ async def admin_dashboard(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    """Admin Dashboard - Overview Statistics"""
-    
-    # Statistics
+    """Admin Dashboard"""
     total_destinations = db.query(func.count(Destination.id)).scalar() or 0
-    active_destinations = db.query(func.count(Destination.id)).filter(Destination.is_active.is_(True)).scalar() or 0
+    active_destinations = db.query(func.count(Destination.id)).filter(
+        Destination.is_active.is_(True)
+    ).scalar() or 0
     total_categories = db.query(func.count(Category.id)).scalar() or 0
     total_routes = db.query(func.count(Route.id)).scalar() or 0
-    unread_feedback = db.query(func.count(WebsiteFeedback.id)).filter(WebsiteFeedback.is_read.is_(False)).scalar() or 0
+    unread_feedback = get_unread_feedback_count(db)
     
-    # Recent destinations
     recent_destinations = db.query(
         Destination,
         Category.name.label('category_name')
@@ -85,23 +84,18 @@ async def admin_dashboard(
 @router.get("/destinations", response_class=HTMLResponse)
 async def admin_destinations(
     request: Request,
-    search: str = "",
-    category: int = 0,
+    search: str = Query(""),
+    category: int = Query(0),
     success: Optional[str] = None,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    """Manage Destinations - List View"""
-    
-    # Build query
+    """Manage Destinations"""
     query = db.query(
         Destination,
         Category.name.label('category_name')
-    ).outerjoin(
-        Category, Destination.category_id == Category.id
-    )
+    ).outerjoin(Category, Destination.category_id == Category.id)
     
-    # Apply filters
     if search:
         search_term = f"%{search}%"
         query = query.filter(
@@ -113,12 +107,8 @@ async def admin_destinations(
         query = query.filter(Destination.category_id == category)
     
     destinations = query.order_by(Destination.created_at.desc()).all()
-    
-    # Get categories for filter
     categories = db.query(Category).order_by(Category.name).all()
-    
-    # Get unread feedback count
-    unread_feedback = db.query(func.count(WebsiteFeedback.id)).filter(WebsiteFeedback.is_read.is_(False)).scalar() or 0
+    unread_feedback = get_unread_feedback_count(db)
     
     return templates.TemplateResponse("admin/destinations.html", {
         "request": request,
@@ -143,8 +133,6 @@ async def add_destination_form(
     db: Session = Depends(get_db)
 ):
     """Add/Edit Destination Form"""
-    
-    # Check if editing
     destination = None
     existing_photos: List[DestinationImage] = []
     
@@ -153,16 +141,12 @@ async def add_destination_form(
         if not destination:
             return RedirectResponse(url="/admin/destinations", status_code=303)
         
-        # Get existing photos
         existing_photos = db.query(DestinationImage).filter(
             DestinationImage.destination_id == id
         ).order_by(DestinationImage.id).all()
     
-    # Get categories
     categories = db.query(Category).order_by(Category.name).all()
-    
-    # Get unread feedback count
-    unread_feedback = db.query(func.count(WebsiteFeedback.id)).filter(WebsiteFeedback.is_read.is_(False)).scalar() or 0
+    unread_feedback = get_unread_feedback_count(db)
     
     return templates.TemplateResponse("admin/add_destination.html", {
         "request": request,
@@ -200,21 +184,17 @@ async def save_destination(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    """Save (Create/Update) Destination"""
-    
+    """Save Destination"""
     try:
-        # Handle main image upload
         image_path: Optional[str] = None
         if image and image.filename:
             image_path = await save_upload_file(image, "destinations")
         
         if id:
-            # Update existing
             destination = db.query(Destination).filter(Destination.id == id).first()
             if not destination:
                 raise HTTPException(status_code=404, detail="Destination not found")
             
-            # Update fields
             destination.name = name
             destination.category_id = category_id
             destination.description = description
@@ -231,9 +211,7 @@ async def save_destination(
             
             if image_path:
                 destination.image_path = image_path
-            
         else:
-            # Create new
             destination = Destination(
                 name=name,
                 category_id=category_id,
@@ -287,7 +265,6 @@ async def delete_destination(
     db: Session = Depends(get_db)
 ):
     """Delete Destination"""
-    
     destination = db.query(Destination).filter(Destination.id == destination_id).first()
     if destination:
         db.delete(destination)
@@ -303,11 +280,11 @@ async def toggle_destination(
     db: Session = Depends(get_db)
 ):
     """Toggle Destination Active Status"""
-    
     destination = db.query(Destination).filter(Destination.id == destination_id).first()
     if destination:
-        # Use .is_() for boolean comparison with SQLAlchemy
-        current_status = db.query(Destination.is_active).filter(Destination.id == destination_id).scalar()
+        current_status = db.query(Destination.is_active).filter(
+            Destination.id == destination_id
+        ).scalar()
         destination.is_active = not current_status
         db.commit()
     
@@ -323,8 +300,6 @@ async def admin_categories(
     db: Session = Depends(get_db)
 ):
     """Manage Categories"""
-    
-    # Get categories with destination count
     categories = db.query(
         Category,
         func.count(Destination.id).label('destination_count')
@@ -332,7 +307,6 @@ async def admin_categories(
         Destination, Category.id == Destination.category_id
     ).group_by(Category.id).order_by(Category.name).all()
     
-    # Icon options
     icon_options = {
         'fa-camera': 'Camera',
         'fa-utensils': 'Restaurant',
@@ -351,8 +325,7 @@ async def admin_categories(
         'fa-heart': 'Favorite'
     }
     
-    # Get unread feedback count
-    unread_feedback = db.query(func.count(WebsiteFeedback.id)).filter(WebsiteFeedback.is_read.is_(False)).scalar() or 0
+    unread_feedback = get_unread_feedback_count(db)
     
     return templates.TemplateResponse("admin/categories.html", {
         "request": request,
@@ -375,15 +348,12 @@ async def save_category(
     db: Session = Depends(get_db)
 ):
     """Save Category"""
-    
     if edit_id:
-        # Update
         category = db.query(Category).filter(Category.id == edit_id).first()
         if category:
             category.name = name
             category.icon = icon
     else:
-        # Create
         category = Category(name=name, icon=icon)
         db.add(category)
     
@@ -398,9 +368,9 @@ async def delete_category(
     db: Session = Depends(get_db)
 ):
     """Delete Category"""
-    
-    # Check if category has destinations
-    count = db.query(func.count(Destination.id)).filter(Destination.category_id == category_id).scalar() or 0
+    count = db.query(func.count(Destination.id)).filter(
+        Destination.category_id == category_id
+    ).scalar() or 0
     
     if count == 0:
         category = db.query(Category).filter(Category.id == category_id).first()
@@ -421,11 +391,8 @@ async def admin_users(
     db: Session = Depends(get_db)
 ):
     """Manage Users"""
-    
     users = db.query(User).order_by(User.created_at.desc()).all()
-    
-    # Get unread feedback count
-    unread_feedback = db.query(func.count(WebsiteFeedback.id)).filter(WebsiteFeedback.is_read.is_(False)).scalar() or 0
+    unread_feedback = get_unread_feedback_count(db)
     
     return templates.TemplateResponse("admin/users.html", {
         "request": request,
@@ -444,13 +411,12 @@ async def toggle_user_role(
     db: Session = Depends(get_db)
 ):
     """Toggle User Role"""
-    
     if user_id == current_user.id:
         return RedirectResponse(url="/admin/users?error=cannot_modify_self", status_code=303)
     
     user = db.query(User).filter(User.id == user_id).first()
     if user:
-        user.role = 'user' if user.role == 'admin' else 'admin'  # type: ignore
+        user.role = 'user' if user.role == 'admin' else 'admin'
         db.commit()
     
     return RedirectResponse(url="/admin/users?success=role_updated", status_code=303)
@@ -463,7 +429,6 @@ async def delete_user(
     db: Session = Depends(get_db)
 ):
     """Delete User"""
-    
     if user_id == current_user.id:
         return RedirectResponse(url="/admin/users?error=cannot_delete_self", status_code=303)
     
