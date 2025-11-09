@@ -50,14 +50,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
-    """Get current logged-in user from session token"""
     token = request.cookies.get("access_token")
     
     if not token:
         return None
     
     try:
-        # Remove "Bearer " prefix if present
+        # Remove Bearer prefix if present
         if token.startswith("Bearer "):
             token = token[7:]
         
@@ -65,6 +64,13 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Optiona
         user_id_raw = payload.get("sub")
         
         if user_id_raw is None:
+            return None
+        
+        # FIXED: Handle both string and int conversion
+        try:
+            user_id = int(user_id_raw)
+        except (ValueError, TypeError):
+            print(f"Invalid user_id format: {user_id_raw}")
             return None
         
         # Convert to int safely - handle both string and int
@@ -157,7 +163,9 @@ async def login(
         })
     
     # Create access token - ensure user.id is converted to string for JWT
-    access_token = create_access_token(data={"sub": str(user.id), "role": str(user.role)})
+    user_id_str = str(user.id) if hasattr(user, 'id') else str(user[0])
+    user_role_str = str(user.role) if hasattr(user, 'role') else str(user[4])
+    access_token = create_access_token(data={"sub": user_id_str, "role": user_role_str})
     
     # Redirect based on role
     if str(user.role) == 'admin':

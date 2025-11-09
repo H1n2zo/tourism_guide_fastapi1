@@ -1,8 +1,3 @@
-# admin.py - Enhanced version with better structure
-"""
-Admin Panel - Complete implementation with all features
-"""
-
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
