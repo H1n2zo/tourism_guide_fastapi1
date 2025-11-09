@@ -20,8 +20,11 @@ templates = Jinja2Templates(directory="templates")
 
 async def save_upload_file(upload_file: UploadFile, subfolder: str = "destinations") -> str:
     """Save uploaded file and return the path"""
+    if not upload_file.filename:
+        raise ValueError("No filename provided")
+        
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename_str = upload_file.filename if upload_file.filename else "unknown"
+    filename_str = upload_file.filename
     extension = Path(filename_str).suffix
     filename = f"{timestamp}_{filename_str}"
     
@@ -29,10 +32,15 @@ async def save_upload_file(upload_file: UploadFile, subfolder: str = "destinatio
     upload_dir.mkdir(parents=True, exist_ok=True)
     file_path = upload_dir / filename
     
-    with file_path.open("wb") as buffer:
-        shutil.copyfileobj(upload_file.file, buffer)
-    
-    return f"{subfolder}/{filename}"
+    try:
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(upload_file.file, buffer)
+        return f"{subfolder}/{filename}"
+    except Exception as e:
+        print(f"Error saving file: {e}")
+        raise
+    finally:
+        upload_file.file.close()
 
 
 def get_unread_feedback_count(db: Session) -> int:
@@ -127,7 +135,7 @@ async def add_destination_form(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    """Add/Edit Destination Form"""
+    """Add/Edit Destination Form - FIXED"""
     destination = None
     existing_photos: List[DestinationImage] = []
     
@@ -228,8 +236,7 @@ async def save_destination(
         db.commit()
         db.refresh(destination)
         
-        # Handle additional photos
-        if additional_photos and len(additional_photos) > 0 and additional_photos[0].filename:
+        if additional_photos and len(additional_photos) > 0:
             for photo in additional_photos:
                 if photo.filename:
                     photo_path = await save_upload_file(photo, "destinations")
@@ -247,6 +254,7 @@ async def save_destination(
         )
     
     except Exception as e:
+        print(f"Error saving destination: {e}")
         return RedirectResponse(
             url=f"/admin/destinations/add?error={str(e)}",
             status_code=303
@@ -262,6 +270,10 @@ async def delete_destination(
     """Delete Destination"""
     destination = db.query(Destination).filter(Destination.id == destination_id).first()
     if destination:
+        if destination.image_path:
+            file_path = UPLOAD_PATH / destination.image_path
+            if file_path.exists():
+                file_path.unlink()
         db.delete(destination)
         db.commit()
     
@@ -277,13 +289,34 @@ async def toggle_destination(
     """Toggle Destination Active Status"""
     destination = db.query(Destination).filter(Destination.id == destination_id).first()
     if destination:
-        current_status = db.query(Destination.is_active).filter(
-            Destination.id == destination_id
-        ).scalar()
-        destination.is_active = not current_status
+        destination.is_active = not destination.is_active
         db.commit()
     
     return RedirectResponse(url="/admin/destinations?success=toggled", status_code=303)
+
+
+@router.get("/destinations/photo/delete/{photo_id}")
+async def delete_destination_photo(
+    photo_id: int,
+    dest_id: int = Query(...),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Delete a destination photo"""
+    photo = db.query(DestinationImage).filter(DestinationImage.id == photo_id).first()
+    
+    if photo:
+        file_path = UPLOAD_PATH / photo.image_path
+        if file_path.exists():
+            file_path.unlink()
+        
+        db.delete(photo)
+        db.commit()
+    
+    return RedirectResponse(
+        url=f"/admin/destinations/add?id={dest_id}&success=photo_deleted",
+        status_code=303
+    )
 
 
 @router.get("/categories", response_class=HTMLResponse)
