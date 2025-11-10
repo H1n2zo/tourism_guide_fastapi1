@@ -197,43 +197,57 @@ async def get_destinations_api(
 
 @app.get("/api/routes")
 async def get_routes_api(db: Session = Depends(get_db)):
-    """API endpoint for transportation routes"""
+    """API endpoint for transportation routes - FIXED"""
     
-    # Query routes with origin and destination names
-    routes_query = db.query(
-        Route,
-        Destination.name.label('origin_name'),
-    ).outerjoin(
-        Destination, Route.origin_id == Destination.id
-    ).filter(
-        Route.is_active.is_(True)
-    ).all()
-    
-    routes = []
-    for route, origin_name in routes_query:
-        # Get destination name separately
-        dest_name = None
-        if route.destination_id:
-            dest = db.query(Destination.name).filter(Destination.id == route.destination_id).first()
-            if dest:
-                dest_name = dest[0]
+    try:
+        # Query routes with origin and destination names
+        routes_query = db.query(
+            Route,
+            Destination.name.label('origin_name'),
+        ).outerjoin(
+            Destination, Route.origin_id == Destination.id
+        ).filter(
+            Route.is_active.is_(True)
+        ).all()
         
-        routes.append({
-            'id': route.id,
-            'route_name': route.route_name,
-            'origin_id': route.origin_id,
-            'origin_name': origin_name,
-            'destination_id': route.destination_id,
-            'destination_name': dest_name,
-            'transport_mode': route.transport_mode,
-            'distance_km': float(route.distance_km) if route.distance_km else None,
-            'estimated_time_minutes': route.estimated_time_minutes,
-            'base_fare': float(route.base_fare) if route.base_fare else 0,
-            'fare_per_km': float(route.fare_per_km) if route.fare_per_km else 0,
-            'description': route.description
-        })
-    
-    return {"routes": routes}
+        routes = []
+        for route, origin_name in routes_query:
+            # Get destination name separately to avoid tuple issues
+            dest_name = None
+            if route.destination_id:
+                dest = db.query(Destination.name).filter(
+                    Destination.id == route.destination_id
+                ).first()
+                if dest:
+                    dest_name = dest[0]
+            
+            # Safely convert decimals to float
+            distance_km = float(route.distance_km) if route.distance_km else None
+            base_fare = float(route.base_fare) if route.base_fare else 0
+            fare_per_km = float(route.fare_per_km) if route.fare_per_km else 0
+            
+            routes.append({
+                'id': route.id,
+                'route_name': route.route_name,
+                'origin_id': route.origin_id,
+                'origin_name': origin_name,
+                'destination_id': route.destination_id,
+                'destination_name': dest_name,
+                'transport_mode': route.transport_mode,
+                'distance_km': distance_km,
+                'estimated_time_minutes': route.estimated_time_minutes,
+                'base_fare': base_fare,
+                'fare_per_km': fare_per_km,
+                'description': route.description or ''
+            })
+        
+        return {"routes": routes}
+        
+    except Exception as e:
+        print(f"Error loading routes: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"routes": [], "error": str(e)}
 
 
 @app.get("/health")

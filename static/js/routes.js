@@ -60,11 +60,11 @@ function displayRoutes(routes) {
     
     if (routes.length === 0) {
         container.innerHTML = `
-            <div class="no-routes">
-                <i class="fas fa-route fa-3x mb-3 text-muted"></i>
-                <p class="text-muted">No transportation routes found.</p>
-                <small class="text-muted">Routes will be added by administrators.</small>
-            </div>
+            
+                
+                No transportation routes found.
+                Routes will be added by administrators.
+            
         `;
         return;
     }
@@ -74,47 +74,52 @@ function displayRoutes(routes) {
         const icon = transportIcons[route.transport_mode] || 'fa-bus';
         const color = transportColors[route.transport_mode] || '#999';
         
-        // Calculate fare
-        const dbDistance = route.distance_km || 0;
-        const dbTime = route.estimated_time_minutes || 0;
-        const dbBaseFare = route.base_fare || 0;
-        const dbFarePerKm = route.fare_per_km || 0;
+        // CRITICAL FIX: Proper fare calculation with null checks
+        const dbDistance = parseFloat(route.distance_km) || 0;
+        const dbTime = parseInt(route.estimated_time_minutes) || 0;
+        const dbBaseFare = parseFloat(route.base_fare) || 0;
+        const dbFarePerKm = parseFloat(route.fare_per_km) || 0;
         
         let totalFare = dbBaseFare;
-        if (['taxi', 'van'].includes(route.transport_mode) && dbDistance > 0) {
+        if (['taxi', 'van'].includes(route.transport_mode) && dbDistance > 0 && dbFarePerKm > 0) {
             totalFare = dbBaseFare + (dbDistance * dbFarePerKm);
         }
         
+        // Format display values
+        const distanceDisplay = dbDistance > 0 ? `${dbDistance.toFixed(1)} km` : 'N/A';
+        const timeDisplay = dbTime > 0 ? `${dbTime} min` : 'N/A';
+        const fareDisplay = totalFare > 0 ? `PHP ${totalFare.toFixed(2)}` : 'N/A';
+        
         html += `
-            <div class="route-card" onclick="showRouteOnMap(${route.id}, ${route.origin_id}, ${route.destination_id})">
-                <div class="d-flex align-items-start">
-                    <div class="transport-icon ${route.transport_mode}" style="color: ${color};">
-                        <i class="fas ${icon}"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h5 class="mb-2">${route.route_name || 'Route'}</h5>
-                        <p class="text-muted mb-2">
-                            <strong>From:</strong> ${route.origin_name || 'N/A'} 
-                            <i class="fas fa-arrow-right mx-2"></i> 
-                            <strong>To:</strong> ${route.destination_name || 'N/A'}
-                        </p>
-                        <div class="mb-2">
-                            <span class="route-info-badge badge-distance">
-                                <i class="fas fa-road"></i> ${dbDistance > 0 ? dbDistance + ' km' : 'N/A'}
-                            </span>
-                            <span class="route-info-badge badge-time">
-                                <i class="fas fa-clock"></i> ${dbTime > 0 ? dbTime + ' min' : 'N/A'}
-                            </span>
-                            <span class="route-info-badge badge-fare">
-                                <i class="fas fa-money-bill-wave"></i> PHP ${totalFare.toFixed(2)}
-                            </span>
-                        </div>
-                        ${route.description && route.description !== '0' ? 
-                            `<p class="mb-0 small text-muted"><i class="fas fa-info-circle"></i> ${route.description}</p>` 
+            
+                
+                    
+                        
+                    
+                    
+                        ${route.route_name || 'Route'}
+                        
+                            From: ${route.origin_name || 'N/A'} 
+                             
+                            To: ${route.destination_name || 'N/A'}
+                        
+                        
+                            
+                                 ${distanceDisplay}
+                            
+                            
+                                 ${timeDisplay}
+                            
+                            
+                                 ${fareDisplay}
+                            
+                        
+                        ${route.description && route.description !== '0' && route.description !== 'null' ? 
+                            ` ${route.description}` 
                             : ''}
-                    </div>
-                </div>
-            </div>
+                    
+                
+            
         `;
     });
     
@@ -146,6 +151,7 @@ function showRouteOnMap(routeId, originId, destinationId) {
     // Remove previous routing control
     if (currentRoutingControl) {
         map.removeControl(currentRoutingControl);
+        currentRoutingControl = null;
     }
 
     // Remove selected class from all route cards
@@ -158,13 +164,33 @@ function showRouteOnMap(routeId, originId, destinationId) {
         event.currentTarget.classList.add('selected');
     }
     
+    // CRITICAL FIX: Validate destinationsMap exists
+    if (!destinationsMap || Object.keys(destinationsMap).length === 0) {
+        console.error('destinationsMap not initialized');
+        alert('Map data not loaded. Please refresh the page.');
+        return;
+    }
+    
     // Get origin and destination coordinates
     const origin = destinationsMap[originId];
     const destination = destinationsMap[destinationId];
     
+    // CRITICAL FIX: Better error handling
     if (!origin || !destination) {
-        alert('Cannot display route - coordinates not available for one or both locations');
-        console.error('Missing coordinates:', { originId, destinationId, origin, destination });
+        console.error('Missing coordinates:', { 
+            originId, 
+            destinationId, 
+            origin, 
+            destination,
+            availableDestinations: Object.keys(destinationsMap)
+        });
+        alert('Cannot display route - location coordinates not available');
+        return;
+    }
+    
+    // Validate coordinates are valid numbers
+    if (!origin.lat || !origin.lng || !destination.lat || !destination.lng) {
+        alert('Invalid coordinates for one or both locations');
         return;
     }
     

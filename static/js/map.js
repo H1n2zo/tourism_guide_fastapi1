@@ -1,41 +1,74 @@
-// Map initialization and marker management
 let map;
 let markersMap = {};
 const destinationsMap = {};
 
 function initMap() {
+    // Wait for map element to exist
+    const mapElement = document.getElementById('map');
+    if (!mapElement) {
+        console.error('Map element not found');
+        return;
+    }
+    
+    // Initialize map centered on Ormoc City
     map = L.map('map').setView([11.0059, 124.6075], 13);
     
+    // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
     }).addTo(map);
 
-    addDestinationMarkers();
+    // Add markers after map is ready
+    setTimeout(addDestinationMarkers, 100);
 }
 
 function addDestinationMarkers() {
-    if (!window.destinations) return;
+    // Validate destinations data exists
+    if (!window.destinations || !Array.isArray(window.destinations)) {
+        console.error('Destinations data not available');
+        return;
+    }
+    
+    console.log('Adding markers for', window.destinations.length, 'destinations');
     
     window.destinations.forEach(dest => {
-        if (dest.latitude && dest.longitude) {
-            destinationsMap[dest.id] = {
-                lat: dest.latitude,
-                lng: dest.longitude,
-                name: dest.name
-            };
-            
-            const marker = L.marker([dest.latitude, dest.longitude]).addTo(map);
-            const popupContent = createPopupContent(dest);
-            
-            marker.bindPopup(popupContent, {
-                maxWidth: 320,
-                className: 'custom-popup'
-            });
-            
-            markersMap[dest.id] = marker;
+        // Validate coordinates
+        if (!dest.latitude || !dest.longitude) {
+            console.warn('Skipping destination without coordinates:', dest.name);
+            return;
         }
+        
+        // Convert to numbers
+        const lat = parseFloat(dest.latitude);
+        const lng = parseFloat(dest.longitude);
+        
+        // Validate parsed coordinates
+        if (isNaN(lat) || isNaN(lng)) {
+            console.warn('Invalid coordinates for:', dest.name);
+            return;
+        }
+        
+        // Store in destinationsMap for route drawing
+        destinationsMap[dest.id] = {
+            lat: lat,
+            lng: lng,
+            name: dest.name
+        };
+        
+        // Create marker
+        const marker = L.marker([lat, lng]).addTo(map);
+        const popupContent = createPopupContent(dest);
+        
+        marker.bindPopup(popupContent, {
+            maxWidth: 320,
+            className: 'custom-popup'
+        });
+        
+        markersMap[dest.id] = marker;
     });
+    
+    console.log('destinationsMap populated with', Object.keys(destinationsMap).length, 'destinations');
 }
 
 function createPopupContent(dest) {
@@ -44,51 +77,80 @@ function createPopupContent(dest) {
         : `https://via.placeholder.com/300x200?text=${encodeURIComponent(dest.name)}`;
     
     const ratingHtml = dest.review_count > 0 
-        ? `<div style="color: #ffc107; font-size: 0.9rem; margin: 8px 0;">
+        ? `
                ${'★'.repeat(Math.round(dest.avg_rating))}${'☆'.repeat(5-Math.round(dest.avg_rating))}
-               <span style="color: #666; margin-left: 5px;">${dest.avg_rating} (${dest.review_count} reviews)</span>
-           </div>`
-        : '<div style="color: #999; font-style: italic; margin: 8px 0;">Not rated yet</div>';
+               ${dest.avg_rating.toFixed(1)} (${dest.review_count} reviews)
+           `
+        : 'Not rated yet';
     
     const description = dest.description && dest.description.length > 120 
         ? dest.description.substring(0, 120) + '...' 
         : (dest.description || 'No description available');
     
-return `
-    <div style="min-width: 280px; max-width: 320px; padding: 12px 16px; background: #fff; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-        <img src="${imageUrl}" 
-             style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;" 
-             alt="${dest.name}">
-        <h6 style="margin: 0 0 5px 0; font-size: 1.1rem; font-weight: bold; color: #333;">${dest.name}</h6>
-        <div style="background: #f0f0f0; padding: 4px 10px; border-radius: 12px; display: inline-block; margin-bottom: 8px; font-size: 0.85rem;">
-            <i class="fas ${dest.icon || 'fa-map-pin'}"></i> ${dest.category_name || 'General'}
-        </div>
-        ${ratingHtml}
-        <p style="margin: 10px 0; color: #555; font-size: 0.9rem; line-height: 1.4;">${description}</p>
-        <a href="/destination/${dest.id}" 
-           class="btn btn-primary btn-sm" 
-           style="display: inline-block; width: 100%; text-align: center; padding: 8px; background: linear-gradient(135deg, #132365ff 0%, #4b59a3ff 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 8px;">
-            <i class="fas fa-info-circle"></i> View Details
-        </a>
-    </div>
-`;
-
+    return `
+        
+            
+            ${dest.name}
+            
+                 ${dest.category_name || 'General'}
+            
+            ${ratingHtml}
+            ${description}
+            
+                 View Details
+            
+        
+    `;
 }
 
-function showOnMap(lat, lng, destId) {
-    if (!lat || !lng) return;
+function showOnMap(lat, lng, destName) {
+    if (!map) {
+        console.error('Map not initialized');
+        return;
+    }
     
+    if (!lat || !lng) {
+        console.warn('Invalid coordinates');
+        return;
+    }
+    
+    // Convert to numbers
+    lat = parseFloat(lat);
+    lng = parseFloat(lng);
+    
+    if (isNaN(lat) || isNaN(lng)) {
+        console.warn('Cannot parse coordinates');
+        return;
+    }
+    
+    // Center map on location
     map.setView([lat, lng], 15);
+    
+    // Scroll to map
     document.getElementById('mapI').scrollIntoView({behavior: 'smooth'});
     
+    // Find and open marker popup
     setTimeout(() => {
         const dest = window.destinations.find(d => 
-            Math.abs(d.latitude - lat) < 0.0001 && 
-            Math.abs(d.longitude - lng) < 0.0001
+            Math.abs(parseFloat(d.latitude) - lat) < 0.0001 && 
+            Math.abs(parseFloat(d.longitude) - lng) < 0.0001
         );
         
         if (dest && markersMap[dest.id]) {
             markersMap[dest.id].openPopup();
         }
     }, 500);
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.getElementById('map')) {
+            initMap();
+        }
+    });
+} else {
+    if (document.getElementById('map')) {
+        initMap();
+    }
 }

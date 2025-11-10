@@ -205,7 +205,22 @@
     <script>
         // Safely pass destinations data from backend
         var destinationsData = {{ destinations|tojson|safe }};
-        window.destinations = destinationsData;
+        window.destinations = [
+            {% for dest in destinations %}
+            {
+                id: {{ dest.id }},
+                name: {{ dest.name|tojson|safe }},
+                description: {{ (dest.description[:120] if dest.description else '')|tojson|safe }},
+                latitude: {{ dest.latitude if dest.latitude else 'null' }},
+                longitude: {{ dest.longitude if dest.longitude else 'null' }},
+                image_path: {{ dest.image_path|tojson|safe }},
+                category_name: {{ dest.category_name|tojson|safe }},
+                icon: {{ dest.icon|tojson|safe }},
+                review_count: {{ dest.review_count or 0 }},
+                avg_rating: {{ dest.avg_rating or 0 }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
         window.UPLOAD_URL = {{ UPLOAD_URL|tojson|safe }};
     </script>
     

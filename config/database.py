@@ -32,6 +32,8 @@ engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=3600,
+    pool_size=10,  # Add this
+    max_overflow=20,  # Add this
     echo=False  # Set to True for SQL query debugging
 )
 
