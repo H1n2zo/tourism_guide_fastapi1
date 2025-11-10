@@ -201,11 +201,12 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
     
-    <!-- Pass backend data to JavaScript -->
+    <!-- FIXED: Pass backend data to JavaScript with proper escaping -->
     <script>
-        const destinations = {{ destinations|tojson }};
-        window.destinations = destinations;
-        window.UPLOAD_URL = "{{ UPLOAD_URL }}";
+        // Safely pass destinations data from backend
+        var destinationsData = {{ destinations|tojson|safe }};
+        window.destinations = destinationsData;
+        window.UPLOAD_URL = {{ UPLOAD_URL|tojson|safe }};
     </script>
     
     <!-- Custom JavaScript Files -->

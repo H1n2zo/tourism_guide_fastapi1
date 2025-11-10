@@ -2,6 +2,7 @@
 """
 Database Configuration for FastAPI Tourism Guide System
 Connects to MySQL/MariaDB via XAMPP
+FIXED: Added .env file loading
 """
 
 from sqlalchemy import create_engine, Column, Integer, String, Text, DECIMAL, Boolean, DateTime, Enum, text
@@ -11,6 +12,10 @@ from datetime import datetime
 from typing import Generator, Optional
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# FIXED: Load environment variables from .env file
+load_dotenv()
 
 # Database Configuration
 DB_HOST = os.getenv("DB_HOST", "localhost")
@@ -165,7 +170,11 @@ def get_db() -> Generator[Session, None, None]:
 # Helper function to create tables
 def create_tables():
     """Create all database tables"""
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ Database tables created successfully!")
+    except Exception as e:
+        print(f"❌ Error creating tables: {e}")
 
 
 # Helper function to test database connection
@@ -173,11 +182,12 @@ def test_connection():
     """Test database connection"""
     try:
         db = SessionLocal()
-        # Fixed: Use text() wrapper for SQL expressions
         db.execute(text("SELECT 1"))
         db.close()
         print("✅ Database connection successful!")
+        print(f"   Connected to: {DB_NAME}@{DB_HOST}:{DB_PORT}")
         return True
     except Exception as e:
         print(f"❌ Database connection failed: {e}")
+        print(f"   Attempted connection: {DB_NAME}@{DB_HOST}:{DB_PORT}")
         return False
