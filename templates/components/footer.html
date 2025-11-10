@@ -1,0 +1,53 @@
+<!-- Reusable Footer Component -->
+<footer class="bg-dark text-white text-center py-4 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <h5><i class="fas fa-map-marked-alt"></i> Tourism Guide</h5>
+                <p class="small">Discover amazing places in Ormoc City</p>
+            </div>
+            <div class="col-md-4 mb-3">
+                <h6>Quick Links</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/" class="text-white-50">Home</a></li>
+                    <li><a href="/#destinations" class="text-white-50">Destinations</a></li>
+                    <li><a href="/#routes" class="text-white-50">Routes</a></li>
+                    <li><a href="/#mapI" class="text-white-50">Map</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-3">
+                <h6>Connect</h6>
+                <div class="social-links">
+                    <a href="#" class="text-white-50 me-2"><i class="fab fa-facebook fa-lg"></i></a>
+                    <a href="#" class="text-white-50 me-2"><i class="fab fa-twitter fa-lg"></i></a>
+                    <a href="#" class="text-white-50 me-2"><i class="fab fa-instagram fa-lg"></i></a>
+                </div>
+            </div>
+        </div>
+        <hr class="bg-secondary">
+        <p class="mb-0">&copy; 2025 Tourism Guide System. All rights reserved.</p>
+        <p class="small text-white-50 mb-0">
+            Powered by FastAPI & OpenStreetMap (100% Free & Open Source)
+        </p>
+    </div>
+</footer>
+
+<style>
+footer a {
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+footer a:hover {
+    color: #667eea !important;
+}
+
+.social-links a {
+    display: inline-block;
+    transition: transform 0.3s;
+}
+
+.social-links a:hover {
+    transform: translateY(-3px);
+}
+</style>

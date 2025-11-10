@@ -17,6 +17,7 @@ from config.database import (
 from routes.auth import router as auth_router, get_current_user
 from routes.destination import router as destination_router
 from routes.admin import router as admin_router
+from routes.api import router as api_router  # FIXED: Added missing API router
 
 
 # Lifespan event handler
@@ -58,6 +59,7 @@ templates.env.filters['nl2br'] = nl2br
 app.include_router(auth_router)
 app.include_router(destination_router)
 app.include_router(admin_router)
+app.include_router(api_router)  # FIXED: Include API router
 
 
 @app.get("/", response_class=HTMLResponse)
